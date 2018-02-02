@@ -1,0 +1,5 @@
+{
+ "directory": "dev/bower_components",
+ "timeout": 60000,
+ "strict-ssl": false
+}
