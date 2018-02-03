@@ -1,3 +1,7 @@
+/**
+ * FrontFreaks GULP
+ */
+
 var gulp = require('gulp');
 var config = require('./gulp/config/config.js');
 var functions = require('./gulp/config/functions.js');
@@ -45,21 +49,6 @@ require(config.buildTask + '/img')(gulp, plugins, config);
 //CREA LA CARPETA DE DISTRIBUCIÓN DE BOWER
 require(config.buildTask + '/bower')(gulp, plugins, config);
 
-//CREA LA CARPETA ENTREGABLE DESARROLLO CSS
-require(config.buildTask + '/staticsCSS')(gulp, plugins, config);
-
-//CREA LA CARPETA ENTREGABLE DESARROLLO JS
-require(config.buildTask + '/staticsJS')(gulp, plugins, config);
-
-//CREA LA CARPETA ENTREGABLE DESARROLLO IMG
-require(config.buildTask + '/staticsIMG')(gulp, plugins, config);
-
-//CREA LA CARPETA ENTREGABLE DESARROLLO HTML
-require(config.buildTask + '/staticsHTML')(gulp, plugins, config);
-
-//CREA EL ARCHIVO ENTREGABLE DESARROLLO MAIN JS
-require(config.buildTask + '/yargsJS')(gulp, plugins, config);
-
 
 /**
  * COMPILACIÓN
@@ -77,22 +66,8 @@ require(config.minTask + '/js-min')(gulp, plugins, config);
 //COMPILA LOS ARCHIVOS IMG
 require(config.minTask + '/img-min')(gulp, plugins, config);
 
-//CREA LA CARPETA ENTREGABLE DESARROLLO CSS
-require(config.minTask + '/staticsCSS-min')(gulp, plugins, config);
-
-//CREA LA CARPETA ENTREGABLE DESARROLLO JS
-require(config.minTask + '/staticsJS-min')(gulp, plugins, config);
-
-//CREA LA CARPETA ENTREGABLE DESARROLLO IMG
-require(config.minTask + '/staticsIMG-min')(gulp, plugins, config);
-
-//CREA EL ARCHIVO ENTREGABLE DESARROLLO MAIN JS
-require(config.minTask + '/yargs-min')(gulp, plugins, config);
-//CREA EL ARCHIVO ENTREGABLE DESARROLLO MAIN JS
-require(config.minTask + '/yargsJS-min')(gulp, plugins, config);
-
 /**
- * OTROS
+ * OTHERS
  */
 
 //CREA CAPTURAS DE PANTALLA DE LAS PAGINAS INDICADAS
@@ -100,9 +75,6 @@ require(config.otherTasks + '/shot')(gulp, plugins, config);
 
 //COMPRUEBA QUE EL CODIGO JS ESTA CORRECTAMENTE ESCRITO
 require(config.otherTasks + '/lint')(gulp, plugins, config);
-
-//Actualiza fichero css de Dropbox
-require(config.otherTasks + '/upCloud')(gulp, plugins, config);
 
 
 require(config.tasks + '/devjs-concat')(gulp, plugins);
@@ -114,15 +86,11 @@ require(config.tasks + '/jquery-concat')(gulp, plugins);
 
 
 gulp.task('prebuild', ['sass', 'jade']);
-gulp.task('statics', ['staticsCSS', 'staticsJS', 'staticsIMG', 'staticsHTML']);
 gulp.task('build', ['prebuild', 'css', 'js', 'html', 'img', 'bower']);
 gulp.task('buildmin', ['prebuild', 'cssmin', 'jsmin', 'htmlmin', 'img', 'bower']);
 
-gulp.task('min', ['cssmin', 'jsmin','staticsCSS-min', 'staticsJS-min', 'staticsIMG-min']);
+gulp.task('min', ['cssmin', 'jsmin', 'img', 'html']);
 
-//gulp.task('server', ['serve', 'watch', 'cacheJade', 'sass', 'setWatch', 'jade']);
 gulp.task('server', ['serve', 'watch', 'cacheJade', 'sass', 'jade']);
 gulp.task('default', ['serve', 'watch', 'cacheJade']);
 
-//Only to minify main.js
-gulp.task('miniYargs',['yargs-min', 'yargsJS', 'yargsJS-min']);
