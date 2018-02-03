@@ -10,7 +10,9 @@ $(document).ready(function(){
 	platforms,
 	score = 0, scoreText,
 	timeLimit = 10, timeText,
-	endText;
+	endText,
+	sky,
+	endGame = false;
 
 	var ball, ball1, ball2,
 	bullets,
@@ -42,8 +44,7 @@ $(document).ready(function(){
 
 		//  We're going to be using physics, so enable the Arcade Physics system
 		game.physics.startSystem(Phaser.Physics.ARCADE);
-		var sky = game.add.sprite(0, 0, 'sky');
-
+		sky = game.add.sprite(0, 0, 'sky');
 
 		//  The platforms group contains the ground and the 2 ledges we can jump on
 		platforms = game.add.group();
@@ -52,7 +53,7 @@ $(document).ready(function(){
 		platforms.enableBody = true;
 
 		//  The score
-		scoreText = game.add.text(16, 16, 'Score: 0', {
+		scoreText = game.add.text(16, 16, 'Score: ' + score, {
 			fontSize: '32px',
 			fill: '#000'
 		});
@@ -61,8 +62,8 @@ $(document).ready(function(){
 		var ground = platforms.add(game.add.tileSprite(0, game.world.height - 55, game.world.width, 55, "ground"));
 		ground.body.immovable = true; //  This stops it from falling away when you jump on it
 
-		var ground = platforms.add(game.add.tileSprite(0, -49, game.world.width, 55, "ground"));
-		ground.body.immovable = true; //  This stops it from falling away when you jump on it
+		var groundTop = platforms.add(game.add.tileSprite(0, -49, game.world.width, 55, "ground"));
+		groundTop.body.immovable = true; //  This stops it from falling away when you jump on it
 
 		var platform = platforms.add(game.add.tileSprite(400, game.world.height - 200, 110, 55, "ground"));
 		platform.body.immovable = true;
@@ -101,11 +102,10 @@ $(document).ready(function(){
 		ball1 = game.add.sprite(100, 240, 'ball');
 		ball2 = game.add.sprite(600, 240, 'ball');
 
-		ball1.scale.setTo(3, 3);
-		ball2.scale.setTo(3, 3);
+		ball1.scale.setTo(2.5, 2.5);
+		ball2.scale.setTo(2.5, 2.5);
 		//  A bouncey ball sprite just to visually see what's going on.
 		//generate random ball --> ball = game.add.sprite(game.world.randomX, 0, 'ball');
-
 
 
 		game.physics.enable([ball1,ball2]);
@@ -142,20 +142,6 @@ $(document).ready(function(){
 		score += 10;
 		scoreText.text = 'Score: ' + score;
 
-	}
-
-	function countDownTimer() {
-		if (timeLimit <= 0) {
-			// End Game Text
-			endText = game.add.text(200, 250, 'Time is over!', {
-				fontSize: '64px',
-				fill: '#000'
-			});
-		}
-		else{
-			timeLimit--;
-			timeText.text = 'Time: ' + timeLimit;
-		}
 	}
 
 	function update() {
@@ -197,14 +183,35 @@ $(document).ready(function(){
 		}
 	}
 
+	function countDownTimer() {
+		if (timeLimit <= 0) {
+			// End Game Text
+			endText = game.add.text(200, 250, 'Time is over!', {
+				fontSize: '64px',
+				fill: '#000'
+			});
+		}
+		else if (endGame === false){
+			timeLimit--;
+			timeText.text = 'Time: ' + timeLimit;
+		}
+	}
+
+	// End Game
 	function collisionHandler (obj1, obj2) {
 		if (sum === 0){
 			console.log("End Game")
 			//ball.body.bounce.setTo(0,0);
 			ball1.body.bounce.setTo(0,0);
 			ball2.body.bounce.setTo(0,0);
+			sky.destroy();
 			game.stage.backgroundColor = '#992d2d';
 			sum++;
+			endText = game.add.text(200, 250, 'Game over!', {
+				fontSize: '64px',
+				fill: '#000'
+			});
+			endGame = true;
 		}
 	}
 });

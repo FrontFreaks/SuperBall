@@ -2,136 +2,14 @@
 <html>
     <head lang="en">
         <meta charset="UTF-8">
-        <title>Game</title>
-        <script type="text/javascript" src="js/jquery-1.11.2.min.js"></script>
-        <script type="text/javascript" src="js/phaser.min.js"></script>
+        <title>FF - FrontFreaks</title>
+        <link rel="stylesheet" type="text/css" href="css/modules1.css"/>
+        <script type="text/javascript" src="js/libs.dependencies.js"></script>
         <script type="text/javascript" src="js/init.js"></script>
     </head>
     <body>
-        <script type="text/javascript">
-            var game = new Phaser.Game(800, 600, Phaser.AUTO, '', {
-                preload: preload,
-                create: create,
-                update: update
-            });
-            var player, platforms;
-            var score = 0;
-            var scoreText;
+        <main class="ff-main">
 
-            var bullets;
-            var resetBullets;
-            var fireBullet;
-            var bulletTime = 0;
-            var fireButton;
-
-            var timeCheck = 0;
-            var timesUp = '+';
-
-            var myCountdownSeconds;
-
-            function preload() {
-                game.load.image('mushroom', 'assets/Mushroom.ico');
-                game.load.image('ground', 'assets/ground.png');
-                game.load.image('sky', 'assets/cloud.jpg');
-            }
-
-            function create() {
-                //  We're going to be using physics, so enable the Arcade Physics system
-                game.physics.startSystem(Phaser.Physics.ARCADE);
-                var sky = game.add.sprite(0, 0, 'sky');
-
-
-                //  The platforms group contains the ground and the 2 ledges we can jump on
-                platforms = game.add.group();
-
-                //  We will enable physics for any object that is created in this group
-                platforms.enableBody = true;
-
-                //  The score
-                scoreText = game.add.text(16, 16, 'score: 0', {
-                    fontSize: '32px',
-                    fill: '#000'
-                });
-
-                // Here we create the ground.
-                var ground = platforms.add(game.add.tileSprite(0, game.world.height - 55, game.world.width, 55, "ground"));
-
-                //  This stops it from falling away when you jump on it
-                ground.body.immovable = true;
-
-                var platform = platforms.add(game.add.tileSprite(400, game.world.height - 200, 110, 55, "ground"));
-                platform.body.immovable = true;
-
-                var laterals = platforms.add(game.add.tileSprite(-100, game.world.height - 110, 110, 55, "ground"));
-                laterals.body.immovable = true;
-
-
-                player = game.add.sprite(32, 0, 'mushroom');
-                player.scale.setTo(0.3, 0.3);
-                //  We need to enable physics on the player
-                game.physics.arcade.enable(player);
-
-                //  Player physics properties. Give the little guy a slight bounce.
-                player.body.bounce.y = 0.1;
-                player.body.gravity.y = 700;
-
-
-            }
-
-            function scoreIncrement() {
-
-                //  Add and update the score
-                score += 10;
-                scoreText.text = 'Score: ' + score;
-
-            }
-
-            function countDownTimer() {
-
-                var timeLimit = 120;
-
-                mySeconds = game.time.totalElapsedSeconds();
-                myCountdownSeconds = timeLimit - mySeconds;
-
-                if (myCountdownSeconds <= 0)
-                {
-                    // time is up
-                    timesUp = 'Time is up!';
-                }
-            }
-
-            function update() {
-                game.physics.arcade.collide(player, platforms);
-                cursors = game.input.keyboard.createCursorKeys();
-                player.body.velocity.x = 0;
-
-                if (cursors.left.isDown) {
-                    //  Move to the left
-                    player.body.velocity.x = -300;
-
-                    player.animations.play('left');
-                }
-                else if (cursors.right.isDown) {
-                    //  Move to the right
-                    player.body.velocity.x = 300;
-
-                    player.animations.play('right');
-                }
-                else {
-                    //  Stand still
-                    player.animations.stop();
-
-                    player.frame = 10;
-                }
-                
-
-                //  Allow the player to jump if they are touching the ground.
-                if (cursors.up.isDown && player.body.touching.down) {
-                    player.body.velocity.y = -500;
-                    scoreIncrement(player);
-                }
-            }
-
-        </script>
+        </main>
     </body>
 </html>
