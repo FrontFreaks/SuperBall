@@ -13,6 +13,20 @@
 	}
 };*/
 
+var render = (function() {
+	var init = function(){
+		console.log("render")
+		game.debug.text(game.time.suggestedFps, 32, 32);
+		// game.debug.text(game.time.physicsElapsed, 32, 32);
+		// game.debug.body(player);
+		// game.debug.bodyInfo(player, 16, 24);
+	}
+	return {
+		init: init
+	}
+
+})();
+
 "use strict";
 
 $(document).ready(function(){
@@ -29,27 +43,27 @@ $(document).ready(function(){
 	sky,
 	endGame = false,
 	pauseKey,
-	pauseText;
+	pauseText,
+	sprite;
 
 	var ball, ball1, ball2,
 	bullets,
-	resetBullets,
-	fireBullet,
-	bulletTime = 0,
 	fireButton,
 	timeCheck = 0,
 	fx,
 	sum = 0,
 	timesUp = '+',
 	myCountdownSeconds,
-	cursors;
+	cursors,
+	bulletTime = 0,
+	bullet;
 
 	function preload() {
 		game.load.image('carl', 'assets/pj/carl.ico');			//charge pj
 		game.load.image('ground', 'assets/background/ground.png');	//charge background
 		game.load.image('sky', 'assets/background/cloud.jpg');		//charge background sky
-		game.load.image('bullet', 'assets/misc/bullet0.png');		//
 		game.load.image('ball', 'assets/balls/pangball.png'); 	//charge balls
+		game.load.image('bullet', 'assets/bullets/bullet0.png');
 		game.load.audiosprite('sfx', 'assets/audio/fx_mixdown.ogg', null, audioJSON);	//charge sound
 	}
 
@@ -117,9 +131,31 @@ $(document).ready(function(){
 		pauseKey = this.input.keyboard.addKey(Phaser.Keyboard.P);
 		pauseKey.onDown.add(togglePause, this);
 
+
+		bullets = game.add.group();
+		bullets.enableBody = true;
+		bullets.physicsBodyType = Phaser.Physics.ARCADE;
+
+		for (var i = 0; i < 20; i++) {
+			var b = bullets.create(0, 0, 'bullet');
+			b.name = 'bullet' + i;
+			b.exists = false;
+			b.visible = false;
+			b.checkWorldBounds = true;
+			b.events.onOutOfBounds.add(resetBullet, this);
+		}
+
+		game.physics.enable(bullet, Phaser.Physics.ARCADE);
+		cursors = game.input.keyboard.createCursorKeys();
+		game.input.keyboard.addKeyCapture([ Phaser.Keyboard.SPACEBAR ]);
+
 	}
 
 	function update() {
+
+		//  As we don't need to exchange any velocities or motion we can the 'overlap' check instead of 'collide'
+		game.physics.arcade.overlap(bullets, ball1, ball2, collisionBullet, null, this);
+
 		cursors = game.input.keyboard.createCursorKeys();
 
 		game.physics.arcade.collide(player, platforms);
@@ -149,7 +185,6 @@ $(document).ready(function(){
 			player.frame = 10;
 		}
 
-
 		//  Allow the player to jump if they are touching the ground.
 		if (cursors.up.isDown && player.body.touching.down && game.physics.arcade.isPaused === false) {
 			player.body.velocity.y = -500;
@@ -157,6 +192,9 @@ $(document).ready(function(){
 			fx.play('numkey');
 		}
 
+		if (game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
+			fireBullet();
+		}
 	}
 
 	function createBall() {
@@ -187,15 +225,6 @@ $(document).ready(function(){
 		ball1.body.velocity.set(150);
 		ball2.body.velocity.set(-200, 60);
 
-		//ball = game.add.sprite(300, 30, 'ball');
-		//ball.body.velocity.setTo(200, 200);
-
-		//  This makes the game world bounce-able
-		//ball.body.collideWorldBounds = true;
-
-		//  This sets the image bounce energy for the horizontal
-		//  and vertical vectors (as an x,y point). "1" is 100% energy return
-		//ball.body.bounce.setTo(1, 1);
 	}
 
 	function scoreIncrement() {
@@ -251,6 +280,27 @@ $(document).ready(function(){
 			game.physics.arcade.isPaused = true;
 			sum++;
 		}
+	}
+	function fireBullet () {
+		if (game.time.now > bulletTime) {
+			bullet = bullets.getFirstExists(false);
+			if (bullet) {
+				bullet.reset(player.x + 6, player.y - 8);
+				bullet.body.velocity.y = -300;
+				bulletTime = game.time.now + 150;
+			}
+		}
+	}
+	//  Called if the bullet goes out of the screen
+	function resetBullet (bullet) {
+		bullet.kill();
+	}
+	//  Called if the bullet hits one of the veg sprites
+	function collisionBullet (bullet, ball1) {
+
+		bullet.kill();
+		ball1.kill();
+
 	}
 });
 
