@@ -13,19 +13,15 @@
 	}
 };*/
 
-var render = (function() {
-	var init = function(){
-		console.log("render")
-		game.debug.text(game.time.suggestedFps, 32, 32);
-		// game.debug.text(game.time.physicsElapsed, 32, 32);
-		// game.debug.body(player);
-		// game.debug.bodyInfo(player, 16, 24);
-	}
-	return {
-		init: init
-	}
-
-})();
+// var render = (function() {
+// 		console.log("render");
+// 		weapon.fire();
+// 		game.debug.text(game.time.suggestedFps, 32, 32);
+// 		// game.debug.text(game.time.physicsElapsed, 32, 32);
+// 		// game.debug.body(player);
+// 		// game.debug.bodyInfo(player, 16, 24);
+//
+// })();
 
 "use strict";
 
@@ -33,20 +29,22 @@ $(document).ready(function(){
 	var game = new Phaser.Game(800, 600, Phaser.CANVAS, 'ff-superball', {
 		preload: preload,
 		create: create,
-		update: update
+		update: update,
+		render: render
 	});
 	var player,
 	platforms,
 	score = 0, scoreText,
-	timeLimit = 10, timeText,
+	timeLimit = 15, timeText,
 	endText,
 	sky,
 	endGame = false,
 	pauseKey,
 	pauseText,
-	sprite;
+	sprite,
+	weapon;
 
-	var ball, ball1, ball2,
+	var balls, ball1, ball2,
 	bullets,
 	fireButton,
 	timeCheck = 0,
@@ -63,65 +61,25 @@ $(document).ready(function(){
 		game.load.image('ground', 'assets/background/ground.png');	//charge background
 		game.load.image('sky', 'assets/background/cloud.jpg');		//charge background sky
 		game.load.image('ball', 'assets/balls/pangball.png'); 	//charge balls
-		game.load.image('bullet', 'assets/bullets/bullet0.png');
+		game.load.image('simplebullet', 'assets/bullets/bullet.png');
+		game.load.image('doublebullet', 'assets/bullets/bullet0.png');
 		game.load.audiosprite('sfx', 'assets/audio/fx_mixdown.ogg', null, audioJSON);	//charge sound
 	}
 
 	function create() {
-		cursors = game.input.keyboard.createCursorKeys();
+		cursors = this.input.keyboard.createCursorKeys();
 
-		//Add music
-		fx = game.add.audioSprite('sfx');
-
-		//  We're going to be using physics, so enable the Arcade Physics system
 		game.physics.startSystem(Phaser.Physics.ARCADE);
-		sky = game.add.sprite(0, 0, 'sky');
+		_createMusic();
 
-		//  The platforms group contains the ground and the 2 ledges we can jump on
-		platforms = game.add.group();
-
-		//  We will enable physics for any object that is created in this group
-		platforms.enableBody = true;
-
-		//  The score text
-		scoreText = game.add.text(16, 16, 'Score: ' + score, {
-			fontSize: '32px',
-			fill: '#000'
-		});
-
-		// Here we create the ground.
-		var ground = platforms.add(game.add.tileSprite(0, game.world.height - 55, game.world.width, 55, "ground"));
-		ground.body.immovable = true; //  This stops it from falling away when you jump on it
-
-		var groundTop = platforms.add(game.add.tileSprite(0, -49, game.world.width, 55, "ground"));
-		groundTop.body.immovable = true; //  This stops it from falling away when you jump on it
-
-		var platform = platforms.add(game.add.tileSprite(400, game.world.height - 200, 110, 55, "ground"));
-		platform.body.immovable = true;
-
-		var laterals1 = platforms.add(game.add.tileSprite(-103, 0, 110, game.world.height, "ground"));
-		laterals1.body.immovable = true;
-
-		var laterals2 = platforms.add(game.add.tileSprite(game.world.width - 7, 0, 110, game.world.height, "ground"));
-		laterals2.body.immovable = true;
+		_createWorld();
 
 
-		player = game.add.sprite(200, 0, 'carl');
-		player.scale.setTo(2, 2);
-		//  We need to enable physics on the player
-		game.physics.arcade.enable(player);
-		createBall();
+		_createPlayer();
 
-		//  Player physics properties. Give the little guy a slight bounce.
-		player.body.bounce.y = 0.1;
-		player.body.gravity.y = 700;
-		player.immovable = true;
+		_createBall();
 
-		// The Time
-		timeText = game.add.text(630, 16, 'Time: ' + timeLimit, {
-			fontSize: '32px',
-			fill: '#000'
-		});
+
 
 		// Second Count
 		game.time.events.loop(Phaser.Timer.SECOND, countDownTimer, this);
@@ -131,32 +89,17 @@ $(document).ready(function(){
 		pauseKey = this.input.keyboard.addKey(Phaser.Keyboard.P);
 		pauseKey.onDown.add(togglePause, this);
 
+		_createWeapon();
 
-		bullets = game.add.group();
-		bullets.enableBody = true;
-		bullets.physicsBodyType = Phaser.Physics.ARCADE;
+		_createScore();
 
-		for (var i = 0; i < 20; i++) {
-			var b = bullets.create(0, 0, 'bullet');
-			b.name = 'bullet' + i;
-			b.exists = false;
-			b.visible = false;
-			b.checkWorldBounds = true;
-			b.events.onOutOfBounds.add(resetBullet, this);
-		}
-
-		game.physics.enable(bullet, Phaser.Physics.ARCADE);
-		cursors = game.input.keyboard.createCursorKeys();
-		game.input.keyboard.addKeyCapture([ Phaser.Keyboard.SPACEBAR ]);
-
+		_createTime();
 	}
 
 	function update() {
 
 		//  As we don't need to exchange any velocities or motion we can the 'overlap' check instead of 'collide'
-		game.physics.arcade.overlap(bullets, ball1, ball2, collisionBullet, null, this);
-
-		cursors = game.input.keyboard.createCursorKeys();
+		// game.physics.arcade.overlap(bullets, ball1, ball2, collisionBullet, null, this);
 
 		game.physics.arcade.collide(player, platforms);
 		player.body.velocity.x = 0;
@@ -165,6 +108,7 @@ $(document).ready(function(){
 		game.physics.arcade.collide(player, ball1, collisionHandler, null, this);
 		game.physics.arcade.collide(player, ball2, collisionHandler, null, this);
 		game.physics.arcade.collide(ball1, ball2);
+		game.physics.arcade.overlap(bullets, [ball1, ball2], collisionBullet, null, this);
 
 		if (cursors.left.isDown) {
 			//  Move to the left
@@ -192,12 +136,67 @@ $(document).ready(function(){
 			fx.play('numkey');
 		}
 
-		if (game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
-			fireBullet();
+		if (fireButton.isDown) {
+			// fireBullet();
+			weapon.fire();
 		}
 	}
 
-	function createBall() {
+	function render(){
+		weapon.debug();
+		// game.debug.text(game.time.suggestedFps, 32, 32);
+		// game.debug.text(game.time.physicsElapsed, 32, 32);
+		game.debug.body(ball1);
+		game.debug.body(ball2);
+		game.debug.body(player);
+		game.debug.body(weapon);
+		// game.debug.bodyInfo(player, 16, 24);
+
+	}
+
+	function _createPlayer(){
+
+		player = game.add.sprite(200, 0, 'carl');
+		player.scale.setTo(2, 2);
+		//  We need to enable physics on the player
+		game.physics.arcade.enable(player);
+		//  Player physics properties. Give the little guy a slight bounce.
+		player.body.bounce.y = 0.1;
+		player.body.gravity.y = 700;
+		player.immovable = true;
+
+	}
+
+	function _createBalls(){
+		balls = game.add.group();
+		balls.enableBody = true;
+		balls.physicsBodyType = Phaser.Physics.ARCADE;
+	}
+
+	function _createWeapon(){
+
+		//  Creates 3 single bullet, using the 'bullet' graphic
+		weapon = game.add.weapon(3, 'simplebullet');
+
+		bullets = weapon.bullets;
+		//  The bullet will be automatically killed when it leaves the world bounds
+		weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+
+		//  Because our bullet is drawn facing up, we need to offset its rotation:
+		weapon.bulletAngleOffset = 90;
+
+		//  The speed at which the bullet is fired
+		weapon.bulletSpeed = 400;
+
+
+		//  Tell the Weapon to track the 'player' Sprite, offset by 14px horizontally, 0 vertically
+		weapon.trackSprite(player, 32, 0);
+
+		fireButton = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
+	}
+
+
+	function _createBall() {
 
 		ball1 = game.add.sprite(100, 240, 'ball');
 		ball2 = game.add.sprite(600, 240, 'ball');
@@ -226,6 +225,8 @@ $(document).ready(function(){
 		ball2.body.velocity.set(-200, 60);
 
 	}
+
+
 
 	function scoreIncrement() {
 		//  Add and update the score
@@ -281,27 +282,60 @@ $(document).ready(function(){
 			sum++;
 		}
 	}
-	function fireBullet () {
-		if (game.time.now > bulletTime) {
-			bullet = bullets.getFirstExists(false);
-			if (bullet) {
-				bullet.reset(player.x + 6, player.y - 8);
-				bullet.body.velocity.y = -300;
-				bulletTime = game.time.now + 150;
-			}
-		}
-	}
-	//  Called if the bullet goes out of the screen
-	function resetBullet (bullet) {
-		bullet.kill();
-	}
+	
 	//  Called if the bullet hits one of the veg sprites
 	function collisionBullet (bullet, ball1) {
-
+console.log(bullet)
 		bullet.kill();
 		ball1.kill();
 
 	}
+	function _createScore(){
+		//  The score text
+		scoreText = game.add.text(16, 16, 'Score: ' + score, {
+			fontSize: '32px',
+			fill: '#000'
+		});
+	}
+	function _createTime(){
+		// The Time
+		timeText = game.add.text(630, 16, 'Time: ' + timeLimit, {
+			fontSize: '32px',
+			fill: '#000'
+		});
+	}
+	function _createMusic(){
+		//Add music
+		fx = game.add.audioSprite('sfx');
+	}
+	function _createWorld(){
+		//  We're going to be using physics, so enable the Arcade Physics system
+		sky = game.add.sprite(0, 0, 'sky');
+
+		//  The platforms group contains the ground and the 2 ledges we can jump on
+		platforms = game.add.group();
+
+		//  We will enable physics for any object that is created in this group
+		platforms.enableBody = true;
+
+
+		// Here we create the ground.
+		var ground = platforms.add(game.add.tileSprite(0, game.world.height - 55, game.world.width, 55, "ground"));
+		ground.body.immovable = true; //  This stops it from falling away when you jump on it
+
+		var groundTop = platforms.add(game.add.tileSprite(0, -49, game.world.width, 55, "ground"));
+		groundTop.body.immovable = true; //  This stops it from falling away when you jump on it
+
+		var platform = platforms.add(game.add.tileSprite(400, game.world.height - 200, 110, 55, "ground"));
+		platform.body.immovable = true;
+
+		var laterals1 = platforms.add(game.add.tileSprite(-103, 0, 110, game.world.height, "ground"));
+		laterals1.body.immovable = true;
+
+		var laterals2 = platforms.add(game.add.tileSprite(game.world.width - 7, 0, 110, game.world.height, "ground"));
+		laterals2.body.immovable = true;
+	}
+
 });
 
 var audioJSON = {
