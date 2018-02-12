@@ -36,25 +36,20 @@ $(document).ready(function(){
 	platforms,
 	score = 0, scoreText,
 	timeLimit = 15, timeText,
+	timeStart = 3, timeStartText,
 	endText,
 	sky,
 	endGame = false,
 	pauseKey,
 	pauseText,
-	sprite,
 	weapon;
 
 	var balls, ball1, ball2,
 	bullets,
 	fireButton,
-	timeCheck = 0,
 	fx,
 	sum = 0,
-	timesUp = '+',
-	myCountdownSeconds,
-	cursors,
-	bulletTime = 0,
-	bullet;
+	cursors;
 
 	function preload() {
 		game.load.image('carl', 'assets/pj/carl.ico');			//charge pj
@@ -70,30 +65,27 @@ $(document).ready(function(){
 		cursors = this.input.keyboard.createCursorKeys();
 
 		game.physics.startSystem(Phaser.Physics.ARCADE);
+
 		_createMusic();
 
 		_createWorld();
 
-
 		_createPlayer();
 
-		_createBall();
+		// _createBall();
 
+		_createBalls();
 
-
-		// Second Count
-		game.time.events.loop(Phaser.Timer.SECOND, countDownTimer, this);
-
-
-		// Pause
-		pauseKey = this.input.keyboard.addKey(Phaser.Keyboard.P);
-		pauseKey.onDown.add(togglePause, this);
+		_createPause();
 
 		_createWeapon();
 
 		_createScore();
 
 		_createTime();
+
+		_createStartTime();
+
 	}
 
 	function update() {
@@ -105,10 +97,10 @@ $(document).ready(function(){
 		player.body.velocity.x = 0;
 
 		//  Enable physics between the knocker and the ball
-		game.physics.arcade.collide(player, ball1, collisionHandler, null, this);
-		game.physics.arcade.collide(player, ball2, collisionHandler, null, this);
-		game.physics.arcade.collide(ball1, ball2);
-		game.physics.arcade.overlap(bullets, [ball1, ball2], collisionBullet, null, this);
+		game.physics.arcade.collide(player, balls, collisionHandler, null, this);
+		game.physics.arcade.collide(balls);
+		game.physics.arcade.collide(balls, platforms);
+		game.physics.arcade.overlap(bullets, balls, collisionBullet, null, this);
 
 		if (cursors.left.isDown) {
 			//  Move to the left
@@ -124,39 +116,39 @@ $(document).ready(function(){
 
 		}
 		else {
-			//  Stand still
-			player.animations.stop();
-			player.frame = 10;
+			// // Stand still
+			// player.animations.stop();
+			// player.frame = 10;
 		}
 
 		//  Allow the player to jump if they are touching the ground.
-		if (cursors.up.isDown && player.body.touching.down && game.physics.arcade.isPaused === false) {
+		if (cursors.up.isDown && player.body.touching.down && !game.physics.arcade.isPaused) {
 			player.body.velocity.y = -500;
-			scoreIncrement(player);
-			fx.play('numkey');
 		}
 
-		if (fireButton.isDown) {
+		if (fireButton.isDown && !game.physics.arcade.isPaused) {
 			// fireBullet();
 			weapon.fire();
+			// console.log(weapon.bullets);
+			// if (!weapon.bullets){
+			// 	fx.play('numkey');
+			// }
 		}
 	}
 
 	function render(){
-		weapon.debug();
+		// weapon.debug();
 		// game.debug.text(game.time.suggestedFps, 32, 32);
 		// game.debug.text(game.time.physicsElapsed, 32, 32);
-		game.debug.body(ball1);
-		game.debug.body(ball2);
+		game.debug.body(balls);
 		game.debug.body(player);
-		game.debug.body(weapon);
+		// game.debug.body(bullets);
 		// game.debug.bodyInfo(player, 16, 24);
-
 	}
 
 	function _createPlayer(){
 
-		player = game.add.sprite(200, 0, 'carl');
+		player = game.add.sprite(370, 450, 'carl');
 		player.scale.setTo(2, 2);
 		//  We need to enable physics on the player
 		game.physics.arcade.enable(player);
@@ -167,16 +159,9 @@ $(document).ready(function(){
 
 	}
 
-	function _createBalls(){
-		balls = game.add.group();
-		balls.enableBody = true;
-		balls.physicsBodyType = Phaser.Physics.ARCADE;
-	}
-
 	function _createWeapon(){
-
 		//  Creates 3 single bullet, using the 'bullet' graphic
-		weapon = game.add.weapon(3, 'simplebullet');
+		weapon = game.add.weapon(2, 'doublebullet');
 
 		bullets = weapon.bullets;
 		//  The bullet will be automatically killed when it leaves the world bounds
@@ -188,11 +173,28 @@ $(document).ready(function(){
 		//  The speed at which the bullet is fired
 		weapon.bulletSpeed = 400;
 
-
 		//  Tell the Weapon to track the 'player' Sprite, offset by 14px horizontally, 0 vertically
 		weapon.trackSprite(player, 32, 0);
 
 		fireButton = game.input.keyboard.addKey(Phaser.KeyCode.SPACEBAR);
+
+	}
+
+	function _createBalls(){
+		balls = game.add.group();
+		balls.enableBody = true;
+		balls.physicsBodyType = Phaser.Physics.ARCADE;
+		for (var i = 0; i < 2; i++) {
+			var ball = balls.create(game.world.randomX, game.rnd.between(0, 100), 'ball');
+			game.physics.enable(ball);
+			ball.body.setCircle(16);
+			ball.body.collideWorldBounds = true;
+			ball.body.bounce.set(1);
+			ball.body.gravity.y = 100;
+			ball.body.velocity.set(150, 60);
+			ball.scale.setTo(2.5, 2.5);			//size
+		}
+
 	}
 
 
@@ -223,38 +225,58 @@ $(document).ready(function(){
 
 		ball1.body.velocity.set(150);
 		ball2.body.velocity.set(-200, 60);
-
 	}
 
-
-
-	function scoreIncrement() {
+	function _scoreIncrement() {
 		//  Add and update the score
 		score += 10;
 		scoreText.text = 'Score: ' + score;
 	}
 
-	function countDownTimer() {
-		if (timeLimit <= 0) {
-			// End Game Text
-			endText = game.add.text(200, 250, 'Time is over!', {
-				fontSize: '64px',
-				fill: '#000'
-			});
-			sky.destroy();
-			game.stage.backgroundColor = '#992d2d';
-			game.physics.arcade.isPaused = true;
-			sum++;
+	function _countDownTimer() {
+		if(timeStart > 0 && game.physics.arcade.isPaused){
+			console.log("paused");
+			timeStart--;
+			if (timeStart === 0){
+				timeStartText.text = 'GO!';
+			}
+			else{
+				timeStartText.text = timeStart;
+			}
 		}
-		else if (endGame === false && game.physics.arcade.isPaused === false){
-			timeLimit--;
-			timeText.text = 'Time: ' + timeLimit;
+		else if (timeStart === 0){
+			timeStartText.destroy();
+			game.physics.arcade.isPaused = false;
+			timeStart = -1;
+			console.log(timeStart);
+		}
+		if (!endGame && !game.physics.arcade.isPaused){
+			if (timeLimit <= 0) {
+				// End Game Text
+				endText = game.add.text(200, 250, 'Time is over!', {
+					fontSize: '64px',
+					fill: '#000'
+				});
+				sky.destroy();
+				game.stage.backgroundColor = '#992d2d';
+				game.physics.arcade.isPaused = true;
+				endGame = true;
+				sum++;
+			}
+			else{
+				timeLimit--;
+				timeText.text = 'Time: ' + timeLimit;
+				// console.log(timeLimit);
+				if (timeLimit <= 10){
+					timeText.style.fill = '#FF0000';
+				}
+			}
 		}
 	}
 
-	function togglePause() {
+	function _togglePause() {
 		game.physics.arcade.isPaused = (game.physics.arcade.isPaused) ? false : true;
-		if (game.physics.arcade.isPaused===true){
+		if (game.physics.arcade.isPaused === true){
 			// The message text
 			pauseText = game.add.text(270, 250, 'Paused!', {
 				fontSize: '64px',
@@ -284,10 +306,10 @@ $(document).ready(function(){
 	}
 	
 	//  Called if the bullet hits one of the veg sprites
-	function collisionBullet (bullet, ball1) {
-console.log(bullet)
+	function collisionBullet (bullet, ball) {
 		bullet.kill();
-		ball1.kill();
+		ball.kill();
+		_scoreIncrement(player);
 
 	}
 	function _createScore(){
@@ -298,8 +320,19 @@ console.log(bullet)
 		});
 	}
 	function _createTime(){
-		// The Time
+		// Seconds Count
+		game.time.events.loop(Phaser.Timer.SECOND, _countDownTimer, this);
+
+		// The Time Text
 		timeText = game.add.text(630, 16, 'Time: ' + timeLimit, {
+			fontSize: '32px',
+			fill: '#000'
+		});
+	}
+	function _createStartTime(){
+		game.physics.arcade.isPaused = true;
+
+		timeStartText = game.add.text(400, 250, timeStart, {
 			fontSize: '32px',
 			fill: '#000'
 		});
@@ -307,6 +340,11 @@ console.log(bullet)
 	function _createMusic(){
 		//Add music
 		fx = game.add.audioSprite('sfx');
+	}
+	function _createPause(){
+		// Pause
+		pauseKey = game.input.keyboard.addKey(Phaser.Keyboard.P);
+		pauseKey.onDown.add(_togglePause, this);
 	}
 	function _createWorld(){
 		//  We're going to be using physics, so enable the Arcade Physics system
